@@ -72,13 +72,14 @@ export function CartDrawer({ open, onClose }: CartDrawerProps) {
             const data: unknown = await response.json().catch(() => null);
 
             if (!response.ok) {
-                const message =
+                const message = (
                     (data &&
                         typeof data === "object" &&
                         "error" in data &&
                         typeof (data as { error: unknown }).error === "string" &&
                         (data as { error: string }).error) ||
-                    "Impossible de démarrer le paiement. Réessayez.";
+                    "Impossible de démarrer le paiement. Réessayez."
+                ) as string;
                 setCheckoutError(message);
                 return;
             }

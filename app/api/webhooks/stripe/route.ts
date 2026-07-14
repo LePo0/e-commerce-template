@@ -265,9 +265,7 @@ function parseMetadataItems(
 }
 
 function parseShippingDetails(
-    shippingDetails:
-        | Stripe.Checkout.Session["shipping_details"]
-        | Stripe.Checkout.Session["collected_information"]["shipping_details"],
+    shippingDetails: any,
 ): ShippingDetails | null {
     if (!shippingDetails) return null;
 
@@ -303,13 +301,12 @@ async function handleCheckoutCompleted(
     partialSession: Stripe.Checkout.Session,
 ): Promise<void> {
     // Bonne pratique Stripe : si le payload du webhook ne contient pas
-    // shipping_details (session créée sans shipping_address_collection,
-    // ou objet partiel selon la version d'API), on re-fetch la session
-    // complète depuis l'API pour obtenir les données à jour.
+    // collected_information.shipping_details (format API récent), on
+    // re-fetch la session complète pour obtenir les données à jour.
     // On ne re-fetch que si nécessaire pour éviter un appel réseau
     // inutile sur le chemin nominal.
     let session = partialSession;
-    if (!session.shipping_details) {
+    if (!session.collected_information?.shipping_details) {
         try {
             session = await stripe.checkout.sessions.retrieve(
                 partialSession.id,
@@ -319,8 +316,9 @@ async function handleCheckoutCompleted(
                 `[stripe webhook] impossible de re-fetcher la session ${partialSession.id} :`,
                 err,
             );
-            // On continue avec la session partielle ; si shipping_details
-            // reste null, parseShippingDetails renverra null et on skipera.
+            // On continue avec la session partielle ; si
+            // collected_information.shipping_details reste absent,
+            // parseShippingDetails renverra null et on skipera.
         }
     }
 
@@ -361,7 +359,6 @@ async function handleCheckoutCompleted(
     }
 
     const shippingDetails = parseShippingDetails(
-        session.shipping_details ??
         session.collected_information?.shipping_details,
     );
     if (!shippingDetails) {

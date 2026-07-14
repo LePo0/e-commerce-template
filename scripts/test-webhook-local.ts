@@ -1,6 +1,6 @@
 import { stripe } from "../lib/stripe";
 import { prisma } from "../lib/prisma";
-import { POST } from "../app/api/webhooks/stripe/route.ts";
+import { POST } from "../app/api/webhooks/stripe/route";
 
 async function main() {
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
