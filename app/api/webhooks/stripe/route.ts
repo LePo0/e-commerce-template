@@ -28,6 +28,7 @@ import { stripe } from "@/lib/stripe";
 export const runtime = "nodejs";
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+const resendDevFallbackTo = process.env.RESEND_DEV_FALLBACK_TO;
 
 if (!webhookSecret) {
     throw new Error(
@@ -187,14 +188,46 @@ async function sendOrderConfirmationEmail(
     }
 
     const { html, text } = buildOrderConfirmationEmail(payload);
+    const shouldRerouteInDev =
+        process.env.NODE_ENV !== "production" &&
+        typeof resendDevFallbackTo === "string" &&
+        resendDevFallbackTo.length > 0;
+    const recipientEmail = shouldRerouteInDev
+        ? resendDevFallbackTo
+        : payload.recipientEmail;
 
-    await resend.emails.send({
+    if (shouldRerouteInDev && recipientEmail !== payload.recipientEmail) {
+        console.warn(
+            `[stripe webhook] mode dev: e-mail redirigé de ${payload.recipientEmail} vers ${recipientEmail} (RESEND_DEV_FALLBACK_TO).`,
+        );
+    }
+
+    const sendResult = await resend.emails.send({
         from: resendFromEmail,
-        to: payload.recipientEmail,
+        to: recipientEmail,
         subject: `Commande confirmée #${payload.orderId}`,
         html,
         text,
     });
+
+    if (sendResult.error) {
+        if (
+            sendResult.error.name === "validation_error" &&
+            !shouldRerouteInDev
+        ) {
+            throw new Error(
+                `[resend] ${sendResult.error.message}. En développement, définissez RESEND_DEV_FALLBACK_TO=<votre_email_autorisé_resend> pour rediriger les e-mails de test.`,
+            );
+        }
+
+        throw new Error(
+            `[resend] ${sendResult.error.name}: ${sendResult.error.message}`,
+        );
+    }
+
+    console.info(
+        `[stripe webhook] e-mail de confirmation envoyé (${sendResult.data?.id ?? "sans-id"}) à ${recipientEmail}.`,
+    );
 }
 
 function parseMetadataItems(
@@ -232,7 +265,9 @@ function parseMetadataItems(
 }
 
 function parseShippingDetails(
-    shippingDetails: Stripe.Checkout.Session["shipping_details"],
+    shippingDetails:
+        | Stripe.Checkout.Session["shipping_details"]
+        | Stripe.Checkout.Session["collected_information"]["shipping_details"],
 ): ShippingDetails | null {
     if (!shippingDetails) return null;
 
@@ -265,8 +300,30 @@ function parseShippingDetails(
 }
 
 async function handleCheckoutCompleted(
-    session: Stripe.Checkout.Session,
+    partialSession: Stripe.Checkout.Session,
 ): Promise<void> {
+    // Bonne pratique Stripe : si le payload du webhook ne contient pas
+    // shipping_details (session créée sans shipping_address_collection,
+    // ou objet partiel selon la version d'API), on re-fetch la session
+    // complète depuis l'API pour obtenir les données à jour.
+    // On ne re-fetch que si nécessaire pour éviter un appel réseau
+    // inutile sur le chemin nominal.
+    let session = partialSession;
+    if (!session.shipping_details) {
+        try {
+            session = await stripe.checkout.sessions.retrieve(
+                partialSession.id,
+            );
+        } catch (err) {
+            console.error(
+                `[stripe webhook] impossible de re-fetcher la session ${partialSession.id} :`,
+                err,
+            );
+            // On continue avec la session partielle ; si shipping_details
+            // reste null, parseShippingDetails renverra null et on skipera.
+        }
+    }
+
     // Idempotence : Stripe peut rejouer un webhook (retries automatiques,
     // renvoi manuel depuis le Dashboard, etc.). Si une commande existe
     // déjà pour cette session, on sort immédiatement sans recréer
@@ -303,7 +360,10 @@ async function handleCheckoutCompleted(
         return;
     }
 
-    const shippingDetails = parseShippingDetails(session.shipping_details);
+    const shippingDetails = parseShippingDetails(
+        session.shipping_details ??
+        session.collected_information?.shipping_details,
+    );
     if (!shippingDetails) {
         console.error(
             `[stripe webhook] session ${session.id} ignorée : shipping_details manquant ou invalide.`,
@@ -340,6 +400,12 @@ async function handleCheckoutCompleted(
                 `Utilisateur ${userId} introuvable lors du traitement de la session ${session.id}.`,
             );
         }
+
+        const checkoutCustomerEmail = session.customer_details?.email?.trim();
+        const recipientEmail =
+            checkoutCustomerEmail && checkoutCustomerEmail.length > 0
+                ? checkoutCustomerEmail
+                : user.email;
 
         for (const item of items) {
             const product = productById.get(item.productId);
@@ -388,7 +454,7 @@ async function handleCheckoutCompleted(
 
         confirmationEmail = {
             orderId: createdOrder.id,
-            recipientEmail: user.email,
+            recipientEmail,
             items: items.map((item) => {
                 const product = productById.get(item.productId)!;
                 return {
@@ -455,7 +521,7 @@ export async function POST(request: Request): Promise<Response> {
         switch (event.type) {
             case "checkout.session.completed":
                 await handleCheckoutCompleted(
-                    event.data.object as Stripe.Checkout.Session,
+                    event.data.object,
                 );
                 break;
             default:

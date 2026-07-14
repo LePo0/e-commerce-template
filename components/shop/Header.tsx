@@ -57,6 +57,12 @@ export async function Header() {
                                     {email}
                                 </span>
                             )}
+                            <Link
+                                href="/orders"
+                                className="text-sm font-medium text-zinc-600 transition hover:text-zinc-900"
+                            >
+                                Mes commandes
+                            </Link>
                             <SignOutButton />
                         </div>
                     ) : (

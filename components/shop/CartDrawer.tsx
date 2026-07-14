@@ -25,8 +25,15 @@ export function CartDrawer({ open, onClose }: CartDrawerProps) {
 
     const [isCheckingOut, setIsCheckingOut] = useState(false);
     const [checkoutError, setCheckoutError] = useState<string | null>(null);
+    const [isMounted, setIsMounted] = useState(false);
     const portalTarget =
         typeof document === "undefined" ? null : document.body;
+
+    // Important for hydration: the server cannot access `document.body`, so we
+    // delay portal rendering until after the first client mount.
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
 
     const handleClose = useCallback(() => {
         setCheckoutError(null);
@@ -367,6 +374,6 @@ export function CartDrawer({ open, onClose }: CartDrawerProps) {
 
     // Avant hydratation (SSR / premier rendu client), on ne rend rien
     // — le drawer est purement interactif de toute façon.
-    if (!portalTarget) return null;
+    if (!isMounted || !portalTarget) return null;
     return createPortal(content, portalTarget);
 }
