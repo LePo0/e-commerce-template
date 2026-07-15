@@ -66,9 +66,10 @@ export default function SignupPage() {
             return;
         }
 
-        // Compte créé + connecté d'un coup.
+        // Compte créé + connecté d'un coup : même logique que login
+        // pour ne pas rester sur un payload client obsolète.
+        router.replace("/");
         router.refresh();
-        router.push("/");
     }
 
     if (needsEmailConfirmation) {

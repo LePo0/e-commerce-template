@@ -9,9 +9,8 @@ import { createClient } from "@/lib/supabase/client";
  * Bouton de déconnexion. Client Component parce qu'il doit :
  *  - appeler `supabase.auth.signOut()` côté navigateur (nettoie le
  *    storage local + révoque la session côté serveur Auth),
- *  - déclencher `router.refresh()` pour que le Server Component parent
- *    (Header) re-render en mode « non connecté »,
- *  - puis pousser vers `/` avec `router.push()`.
+ *  - naviguer vers `/` puis déclencher `router.refresh()` pour que le
+ *    Server Component parent (Header) re-render en mode « non connecté ».
  */
 export function SignOutButton() {
     const router = useRouter();
@@ -29,8 +28,8 @@ export function SignOutButton() {
             console.error("[signOut]", error.message);
         }
 
+        router.replace("/");
         router.refresh();
-        router.push("/");
     }
 
     return (

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { unstable_noStore as noStore } from "next/cache";
 
 import { createClient } from "@/lib/supabase/server";
 
@@ -17,6 +18,8 @@ import { SignOutButton } from "./SignOutButton";
  * transformer tout le Header en Client Component.
  */
 export async function Header() {
+    noStore();
+
     const supabase = await createClient();
 
     // `getClaims()` vérifie la signature du JWT (JWKS local pour les

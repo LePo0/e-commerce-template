@@ -43,10 +43,10 @@ export default function LoginPage() {
             return;
         }
 
-        // Force un re-render des Server Components pour qu'ils voient
-        // la nouvelle session (le proxy a déjà mirroré les cookies).
+        // Navigue d'abord, puis invalide le cache client de la route
+        // courante pour éviter d'afficher un layout préfetché obsolète.
+        router.replace("/");
         router.refresh();
-        router.push("/");
     }
 
     return (
