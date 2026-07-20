@@ -52,19 +52,18 @@ export async function Header() {
 
                     {isAuthenticated ? (
                         <div className="flex items-center gap-3 sm:gap-4">
-                            {email && (
-                                <span
-                                    className="hidden max-w-[200px] truncate text-sm text-zinc-600 sm:inline"
-                                    title={email}
-                                >
-                                    {email}
-                                </span>
-                            )}
+
                             <Link
                                 href="/orders"
                                 className="text-sm font-medium text-zinc-600 transition hover:text-zinc-900"
                             >
                                 Mes commandes
+                            </Link>
+                            <Link
+                                href="/profile"
+                                className="text-sm font-medium text-zinc-600 transition hover:text-zinc-900"
+                            >
+                                Profil
                             </Link>
                             <SignOutButton />
                         </div>
