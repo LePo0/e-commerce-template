@@ -88,83 +88,83 @@ export default function LoginPage() {
                             Mot de passe
                         </label>
                         <div className="relative mt-1">
-                        <input
-                            id="password"
-                            type={showPassword ? "text" : "password"}
-                            name="password"
-                            autoComplete="current-password"
-                            required
-                            minLength={6}
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            className="block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 pr-12 text-sm text-zinc-900 shadow-sm transition focus:border-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/10"
-                        />
-                        <button
-                            type="button"
-                            onClick={() => setShowPassword((prev) => !prev)}
-                            aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
-                            aria-pressed={showPassword}
-                            className="absolute inset-y-0 right-0 inline-flex items-center px-3 text-zinc-600 transition hover:text-zinc-900"
-                        >
-                            {showPassword ? (
-                                <svg
-                                    aria-hidden
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    className="h-5 w-5"
-                                >
-                                    <path
-                                        d="M3 3l18 18"
-                                        stroke="currentColor"
-                                        strokeWidth="1.8"
-                                        strokeLinecap="round"
-                                    />
-                                    <path
-                                        d="M10.58 10.58a2 2 0 1 0 2.83 2.83"
-                                        stroke="currentColor"
-                                        strokeWidth="1.8"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                    />
-                                    <path
-                                        d="M9.88 5.08A10.94 10.94 0 0 1 12 4.91c5.05 0 9.27 3.11 10.5 7.09a10.82 10.82 0 0 1-4.2 5.67"
-                                        stroke="currentColor"
-                                        strokeWidth="1.8"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                    />
-                                    <path
-                                        d="M6.61 6.61A10.84 10.84 0 0 0 1.5 12c1.23 3.98 5.45 7.09 10.5 7.09 1.77 0 3.44-.38 4.94-1.06"
-                                        stroke="currentColor"
-                                        strokeWidth="1.8"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                    />
-                                </svg>
-                            ) : (
-                                <svg
-                                    aria-hidden
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    className="h-5 w-5"
-                                >
-                                    <path
-                                        d="M1.5 12S5.73 4.91 12 4.91 22.5 12 22.5 12 18.27 19.09 12 19.09 1.5 12 1.5 12Z"
-                                        stroke="currentColor"
-                                        strokeWidth="1.8"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                    />
-                                    <circle
-                                        cx="12"
-                                        cy="12"
-                                        r="3"
-                                        stroke="currentColor"
-                                        strokeWidth="1.8"
-                                    />
-                                </svg>
-                            )}
-                        </button>
+                            <input
+                                id="password"
+                                type={showPassword ? "text" : "password"}
+                                name="password"
+                                autoComplete="current-password"
+                                required
+                                minLength={6}
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                className="block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 pr-12 text-sm text-zinc-900 shadow-sm transition focus:border-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/10"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword((prev) => !prev)}
+                                aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+                                aria-pressed={showPassword}
+                                className="absolute inset-y-0 right-0 inline-flex items-center px-3 text-zinc-600 transition hover:text-zinc-900"
+                            >
+                                {showPassword ? (
+                                    <svg
+                                        aria-hidden
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        className="h-5 w-5"
+                                    >
+                                        <path
+                                            d="M3 3l18 18"
+                                            stroke="currentColor"
+                                            strokeWidth="1.8"
+                                            strokeLinecap="round"
+                                        />
+                                        <path
+                                            d="M10.58 10.58a2 2 0 1 0 2.83 2.83"
+                                            stroke="currentColor"
+                                            strokeWidth="1.8"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                        />
+                                        <path
+                                            d="M9.88 5.08A10.94 10.94 0 0 1 12 4.91c5.05 0 9.27 3.11 10.5 7.09a10.82 10.82 0 0 1-4.2 5.67"
+                                            stroke="currentColor"
+                                            strokeWidth="1.8"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                        />
+                                        <path
+                                            d="M6.61 6.61A10.84 10.84 0 0 0 1.5 12c1.23 3.98 5.45 7.09 10.5 7.09 1.77 0 3.44-.38 4.94-1.06"
+                                            stroke="currentColor"
+                                            strokeWidth="1.8"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                        />
+                                    </svg>
+                                ) : (
+                                    <svg
+                                        aria-hidden
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        className="h-5 w-5"
+                                    >
+                                        <path
+                                            d="M1.5 12S5.73 4.91 12 4.91 22.5 12 22.5 12 18.27 19.09 12 19.09 1.5 12 1.5 12Z"
+                                            stroke="currentColor"
+                                            strokeWidth="1.8"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                        />
+                                        <circle
+                                            cx="12"
+                                            cy="12"
+                                            r="3"
+                                            stroke="currentColor"
+                                            strokeWidth="1.8"
+                                        />
+                                    </svg>
+                                )}
+                            </button>
                         </div>
                     </div>
 
