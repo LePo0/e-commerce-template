@@ -62,21 +62,15 @@ function getOrigin(request: Request): string {
 }
 
 export async function POST(request: Request) {
-    // Auth d'abord : inutile d'aller taper la DB pour un anonyme.
+    // Auth facultative : un invité peut commander (checkout anonyme).
     // On utilise `getClaims()` (JWT vérifié localement avec la clé
     // publique Supabase) — pas de round-trip auth-server sur chaque
-    // checkout. Renvoyer 401 dès le début évite aussi de leaker la
-    // structure d'erreur du body pour un utilisateur non connecté.
+    // checkout.
     const supabase = await createClient();
     const { data: claimsData, error: claimsError } =
         await supabase.auth.getClaims();
-    const userId = claimsData?.claims?.sub;
-    if (claimsError || !userId) {
-        return Response.json(
-            { error: "Vous devez être connecté pour passer commande." },
-            { status: 401 },
-        );
-    }
+    const userId = claimsError ? undefined : claimsData?.claims?.sub;
+    const userEmail = claimsError ? undefined : claimsData?.claims?.email;
 
     let payload: unknown;
     try {
@@ -194,10 +188,15 @@ export async function POST(request: Request) {
         allow_promotion_codes: true,
         success_url: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${origin}/cart`,
-        // `client_reference_id` est le champ Stripe standard pour lier
-        // une session au client applicatif (repris tel quel dans
-        // l'événement webhook `checkout.session.completed`).
-        client_reference_id: userId,
+        // Utilisateur connecté : `client_reference_id` (champ Stripe
+        // standard, repris tel quel dans `checkout.session.completed`)
+        // lie la session au compte, et `customer_email` préremplit et
+        // verrouille l'e-mail du compte sur Stripe — sinon Stripe Link /
+        // l'autofill du navigateur proposent l'e-mail mémorisé, quel
+        // que soit le compte connecté.
+        // Invité : on n'envoie rien, Stripe Checkout demande l'e-mail.
+        ...(userId ? { client_reference_id: userId } : {}),
+        ...(userId && userEmail ? { customer_email: userEmail } : {}),
         metadata: {
             items: JSON.stringify(metadataItems),
         },

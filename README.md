@@ -2,7 +2,7 @@
 
 Boutique en ligne full-stack construite comme projet de démonstration — catalogue produits, panier, paiement sécurisé et gestion de commandes.
 
-🔗 **Démo live** : [e-commerce-template-va8r.vercel.app](https://e-commerce-template-va8r.vercel.app/)
+🔗 **Démo live** : [demo-eshop.vincent-angoulvant.fr](https://demo-eshop.vincent-angoulvant.fr/)
 
 > Ce projet est un template de démonstration à but de portfolio. Les données produits sont fictives, le paiement fonctionne en mode test Stripe (aucune transaction réelle).
 
@@ -13,6 +13,7 @@ Boutique en ligne full-stack construite comme projet de démonstration — catal
 - Panier persistant côté client (survit au rechargement de page)
 - Authentification (inscription / connexion)
 - Paiement sécurisé via Stripe Checkout, avec adresse de livraison et code promo
+- Commande invité (sans compte), rattachée automatiquement au compte créé ensuite avec le même e-mail (une fois confirmé)
 - Historique des commandes par utilisateur
 - Email de confirmation automatique après achat
 
@@ -101,6 +102,10 @@ STRIPE_WEBHOOK_SECRET="whsec_..."
 
 # Resend
 RESEND_API_KEY="re_..."
+# Expéditeur (domaine vérifié dans Resend). Défaut : onboarding@resend.dev
+RESEND_FROM_EMAIL="Boutique <noreply@demo-eshop.vincent-angoulvant.fr>"
+# Dev uniquement : redirige tous les e-mails de commande vers cette adresse
+# RESEND_DEV_FALLBACK_TO="vous@exemple.com"
 ```
 
 ### 3. Base de données
@@ -136,7 +141,7 @@ CVC : n'importe quel 3 chiffres
 
 - [ ] Panel admin (gestion des rôles, suivi des commandes)
 - [ ] Suivi d'expédition avec notifications email par statut
-- [ ] Domaine d'envoi email personnalisé
+- [x] Domaine d'envoi email personnalisé
 
 ## Licence
 

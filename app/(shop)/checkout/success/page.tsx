@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { use, useEffect } from "react";
+import { use, useEffect, useState } from "react";
 
 import { useCartStore } from "@/lib/store/cart";
+import { createClient } from "@/lib/supabase/client";
 
 /**
  * Page de confirmation après retour de Stripe Checkout.
@@ -42,6 +43,16 @@ export default function CheckoutSuccessPage({
         clearCart();
     }, [clearCart]);
 
+    // Invité : on l'invite à créer un compte avec le même e-mail pour
+    // retrouver sa commande (rattachement auto côté SQL).
+    const [isGuest, setIsGuest] = useState(false);
+
+    useEffect(() => {
+        createClient()
+            .auth.getClaims()
+            .then(({ data }) => setIsGuest(!data?.claims?.sub));
+    }, []);
+
     return (
         <main className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-2xl flex-col items-center justify-center px-6 py-16 text-center">
             <div
@@ -70,6 +81,19 @@ export default function CheckoutSuccessPage({
                 Votre paiement a bien été reçu. Vous recevrez sous peu un
                 e-mail de confirmation avec le détail de votre commande.
             </p>
+
+            {isGuest && (
+                <p className="mt-4 text-sm text-zinc-600">
+                    Pour retrouver vos commandes,{" "}
+                    <Link
+                        href="/signup"
+                        className="font-semibold text-zinc-900 underline"
+                    >
+                        créez un compte
+                    </Link>{" "}
+                    avec le même e-mail.
+                </p>
+            )}
 
             {sessionId && (
                 <p className="mt-6 rounded-md bg-zinc-100 px-3 py-2 font-mono text-xs text-zinc-600">

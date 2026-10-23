@@ -346,17 +346,11 @@ async function handleCheckoutCompleted(
     }
 
     // `client_reference_id` est attaché par /api/checkout à partir
-    // du sub JWT Supabase de l'utilisateur authentifié. Son absence
-    // ne peut donc arriver que sur une session créée hors de notre
-    // route (test manuel Stripe CLI, ancienne session pré-migration…) :
-    // on log et on skip sans faire échouer le webhook.
-    const userId = session.client_reference_id;
-    if (!userId) {
-        console.error(
-            `[stripe webhook] session ${session.id} ignorée : client_reference_id absent.`,
-        );
-        return;
-    }
+    // du sub JWT Supabase quand l'utilisateur est connecté. Son
+    // absence signifie une commande invité : `userId` reste NULL et la
+    // commande sera rattachée au compte créé plus tard avec le même
+    // e-mail (trigger SQL `link_guest_orders`).
+    const userId = session.client_reference_id ?? null;
 
     const shippingDetails = parseShippingDetails(
         session.collected_information?.shipping_details,
@@ -388,21 +382,35 @@ async function handleCheckoutCompleted(
 
         const productById = new Map(products.map((p) => [p.id, p]));
 
-        const user = await tx.user.findUnique({
-            where: { id: userId },
-            select: { email: true },
-        });
-        if (!user) {
-            throw new Error(
-                `Utilisateur ${userId} introuvable lors du traitement de la session ${session.id}.`,
-            );
+        let userEmail: string | null = null;
+        if (userId) {
+            const user = await tx.user.findUnique({
+                where: { id: userId },
+                select: { email: true },
+            });
+            if (!user) {
+                throw new Error(
+                    `Utilisateur ${userId} introuvable lors du traitement de la session ${session.id}.`,
+                );
+            }
+            userEmail = user.email;
         }
 
         const checkoutCustomerEmail = session.customer_details?.email?.trim();
         const recipientEmail =
             checkoutCustomerEmail && checkoutCustomerEmail.length > 0
                 ? checkoutCustomerEmail
-                : user.email;
+                : userEmail;
+        if (!recipientEmail) {
+            // Invité sans e-mail Stripe : ne devrait pas arriver (Stripe
+            // Checkout exige l'e-mail en mode `payment`). Non
+            // récupérable → on log et on sort sans écrire (pas de
+            // retry Stripe).
+            console.error(
+                `[stripe webhook] session ${session.id} ignorée : aucun e-mail client (invité sans customer_details.email).`,
+            );
+            return;
+        }
 
         for (const item of items) {
             const product = productById.get(item.productId);
@@ -425,6 +433,7 @@ async function handleCheckoutCompleted(
         const createdOrder = await tx.order.create({
             data: {
                 userId,
+                customerEmail: recipientEmail,
                 status: "PAID",
                 totalAmount,
                 ...shippingDetails,
@@ -474,19 +483,19 @@ async function handleCheckoutCompleted(
         }
     });
 
-    if (confirmationEmail) {
-        try {
-            await sendOrderConfirmationEmail(confirmationEmail);
-        } catch (error) {
-            console.error(
-                `[stripe webhook] commande créée pour la session ${session.id}, mais l'e-mail de confirmation a échoué :`,
-                error,
-            );
-        }
+    if (!confirmationEmail) return;
+
+    try {
+        await sendOrderConfirmationEmail(confirmationEmail);
+    } catch (error) {
+        console.error(
+            `[stripe webhook] commande créée pour la session ${session.id}, mais l'e-mail de confirmation a échoué :`,
+            error,
+        );
     }
 
     console.info(
-        `[stripe webhook] session ${session.id} traitée : commande créée pour l'utilisateur ${userId}.`,
+        `[stripe webhook] session ${session.id} traitée : commande créée ${userId ? `pour l'utilisateur ${userId}` : "en invité"}.`,
     );
 }
 
