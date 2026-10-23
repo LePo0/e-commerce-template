@@ -86,9 +86,10 @@ sur-ingénierie pour des features qui ne seront jamais utilisées en prod réell
   proposer de migrer vers un panier serveur sans demande explicite.
 
 ### Images
-- Placeholders via `picsum.photos` (format
-  `https://picsum.photos/seed/[nom]/400/400`), domaine autorisé dans
-  `next.config.ts` via `images.remotePatterns`. Pas de Supabase Storage tant
+- Photos produits servies localement depuis `public/products/[slug].jpg`
+  (photos Unsplash 800×800, crédits dans le README) ; `Product.imageUrl`
+  stocke le chemin relatif. La route checkout le résout en URL absolue
+  pour Stripe. Pas de Supabase Storage tant
   qu'il n'y a pas de vrai besoin d'upload d'images par un admin.
 
 ### Emails

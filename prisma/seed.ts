@@ -21,8 +21,8 @@ const prisma = new PrismaClient({
     adapter: new PrismaPg({ connectionString }),
 });
 
-// Slug déterministe utilisé à la fois comme "seed" pour picsum.photos
-// (pour obtenir toujours la même image) et comme identifiant lisible.
+// Le slug donne le nom du fichier image dans `public/products/`
+// (photos Unsplash, licence libre — crédits dans le README).
 const products = [
     {
         slug: "casque-audio",
@@ -77,22 +77,39 @@ const products = [
 async function main() {
     console.log("🌱 Seed en cours...");
 
-    // On vide d'abord la table produit (les OrderItem qui pointent
-    // dessus utilisent onDelete: Restrict, mais on n'a pas encore de
-    // commandes en seed donc c'est sans risque).
-    await prisma.product.deleteMany();
+    // Idempotent : impossible de vider la table produit dès qu'il existe
+    // des commandes (OrderItem → Product en onDelete: Restrict). On met
+    // donc à jour les produits existants (repérés par leur nom) et on
+    // crée les manquants. Le stock d'un produit existant n'est pas
+    // réinitialisé.
+    let createdCount = 0;
+    let updatedCount = 0;
 
-    const created = await prisma.product.createMany({
-        data: products.map((p) => ({
+    for (const p of products) {
+        const data = {
             name: p.name,
             description: p.description,
             price: p.price,
-            imageUrl: `https://picsum.photos/seed/${p.slug}/400/400`,
-            stock: p.stock,
-        })),
-    });
+            imageUrl: `/products/${p.slug}.jpg`,
+        };
 
-    console.log(`✅ ${created.count} produits créés.`);
+        const existing = await prisma.product.findFirst({
+            where: { name: p.name },
+            select: { id: true },
+        });
+
+        if (existing) {
+            await prisma.product.update({ where: { id: existing.id }, data });
+            updatedCount++;
+        } else {
+            await prisma.product.create({ data: { ...data, stock: p.stock } });
+            createdCount++;
+        }
+    }
+
+    console.log(
+        `✅ ${createdCount} produit(s) créé(s), ${updatedCount} mis à jour.`,
+    );
 }
 
 main()

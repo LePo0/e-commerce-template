@@ -155,7 +155,11 @@ export async function POST(request: Request) {
             Number(product.price.toFixed(2)) * 100,
         );
 
-        const isAbsoluteImage = /^https?:\/\//i.test(product.imageUrl);
+        // Stripe exige des URLs absolues et publiques : les images
+        // locales (`/products/…`) sont résolues sur l'origine du site,
+        // sauf en local (http://localhost, inaccessible pour Stripe).
+        const imageUrl = new URL(product.imageUrl, origin);
+        const isPublicImage = imageUrl.protocol === "https:";
 
         lineItems.push({
             quantity,
@@ -164,8 +168,7 @@ export async function POST(request: Request) {
                 unit_amount: unitAmount,
                 product_data: {
                     name: product.name,
-                    // Stripe exige des URLs absolues pour les images.
-                    ...(isAbsoluteImage ? { images: [product.imageUrl] } : {}),
+                    ...(isPublicImage ? { images: [imageUrl.href] } : {}),
                 },
             },
         });

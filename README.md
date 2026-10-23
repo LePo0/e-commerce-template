@@ -87,7 +87,8 @@ Resend ──► e-mail de confirmation au client
 /prisma
   schema.prisma
   /migrations                # Dont triggers SQL sur auth.users
-  seed.ts
+  seed.ts                    # Produits de démo (idempotent)
+/public/products             # Photos produits
 /scripts
   test-webhook-local.mjs     # Simule un webhook Stripe signé en local
 proxy.ts                     # Rafraîchissement de session Supabase
@@ -137,6 +138,8 @@ npx prisma migrate deploy
 npx prisma db seed
 ```
 
+> Le seed est idempotent : il met à jour les produits existants (sans toucher au stock) et crée les manquants. On peut le relancer même quand des commandes existent.
+>
 > Utiliser `migrate deploy` et non `migrate dev` : certaines migrations créent des triggers sur `auth.users`, un schéma propre à Supabase qui n'existe pas dans la shadow database de `migrate dev`.
 
 ### 4. Lancer le projet
@@ -207,3 +210,5 @@ npm run test:webhook -- --guest   # commande invité
 ## Licence
 
 [MIT](LICENSE) © Vincent Angoulvant
+
+Les photos produits (`public/products/`) proviennent d'[Unsplash](https://unsplash.com/) et sont utilisées sous la [licence Unsplash](https://unsplash.com/license).
