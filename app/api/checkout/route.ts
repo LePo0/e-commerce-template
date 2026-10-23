@@ -191,16 +191,16 @@ export async function POST(request: Request) {
         // du bouton « Payer ». Uniquement avec une clé de test.
         ...(isStripeTestMode
             ? {
-                  custom_text: {
-                      submit: {
-                          message:
-                              "Site de démonstration — aucun paiement réel. Carte de test : 4242 4242 4242 4242, date d'expiration future, CVC au choix (ex. 123).",
-                      },
-                  },
-              }
+                custom_text: {
+                    submit: {
+                        message:
+                            "Site de démonstration — aucun paiement réel. Carte de test : 4242 4242 4242 4242, date d'expiration future, CVC au choix (ex. 123).",
+                    },
+                },
+            }
             : {}),
         success_url: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${origin}/cart`,
+        cancel_url: `${origin}`,
         // Utilisateur connecté : `client_reference_id` (champ Stripe
         // standard, repris tel quel dans `checkout.session.completed`)
         // lie la session au compte, et `customer_email` préremplit et
