@@ -4,7 +4,7 @@ import type Stripe from "stripe";
 
 import { Prisma } from "@/app/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
-import { resend, resendFromEmail } from "@/lib/resend";
+import { resend, resendFromEmail, resendReplyTo } from "@/lib/resend";
 import { stripe } from "@/lib/stripe";
 
 /**
@@ -205,6 +205,7 @@ async function sendOrderConfirmationEmail(
     const sendResult = await resend.emails.send({
         from: resendFromEmail,
         to: recipientEmail,
+        ...(resendReplyTo ? { replyTo: resendReplyTo } : {}),
         subject: `Commande confirmée #${payload.orderId}`,
         html,
         text,

@@ -104,6 +104,8 @@ STRIPE_WEBHOOK_SECRET="whsec_..."
 RESEND_API_KEY="re_..."
 # Expéditeur (domaine vérifié dans Resend). Défaut : onboarding@resend.dev
 RESEND_FROM_EMAIL="Boutique <noreply@demo-eshop.vincent-angoulvant.fr>"
+# Optionnel : adresse de réponse (boîte réelle), améliore la délivrabilité
+# RESEND_REPLY_TO="contact@exemple.com"
 # Dev uniquement : redirige tous les e-mails de commande vers cette adresse
 # RESEND_DEV_FALLBACK_TO="vous@exemple.com"
 ```

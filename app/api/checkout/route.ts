@@ -3,7 +3,7 @@ import "server-only";
 import type Stripe from "stripe";
 
 import { prisma } from "@/lib/prisma";
-import { stripe } from "@/lib/stripe";
+import { isStripeTestMode, stripe } from "@/lib/stripe";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -186,6 +186,19 @@ export async function POST(request: Request) {
             allowed_countries: ["FR", "BE", "CH", "LU"],
         },
         allow_promotion_codes: true,
+        // Site de démo : Stripe Checkout (hébergé, PCI) ne permet pas de
+        // préremplir la carte, on affiche donc la carte de test au-dessus
+        // du bouton « Payer ». Uniquement avec une clé de test.
+        ...(isStripeTestMode
+            ? {
+                  custom_text: {
+                      submit: {
+                          message:
+                              "Site de démonstration — aucun paiement réel. Carte de test : 4242 4242 4242 4242, date d'expiration future, CVC au choix (ex. 123).",
+                      },
+                  },
+              }
+            : {}),
         success_url: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${origin}/cart`,
         // Utilisateur connecté : `client_reference_id` (champ Stripe

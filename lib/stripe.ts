@@ -21,6 +21,9 @@ if (!secretKey) {
     );
 }
 
+/** Clé de test (`sk_test_…` / `rk_test_…`) : aucune transaction réelle. */
+export const isStripeTestMode = /^(sk|rk)_test_/.test(secretKey);
+
 export const stripe = new Stripe(secretKey, {
     // Épingle la version d'API pour que le comportement soit reproductible :
     // Stripe garantit que cette version n'aura pas de breaking change tant
