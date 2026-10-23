@@ -9,9 +9,10 @@ sur-ingénierie pour des features qui ne seront jamais utilisées en prod réell
 
 ## Stack technique
 
-- **Framework** : Next.js 14 (App Router), TypeScript strict
-- **Style** : Tailwind CSS
-- **ORM** : Prisma
+- **Framework** : Next.js 16 (App Router), React 19, TypeScript strict
+- **Style** : Tailwind CSS 4
+- **ORM** : Prisma 7 (config dans `prisma.config.ts`, client généré dans
+  `app/generated/prisma`)
 - **Base de données / Auth** : Supabase (Postgres + Supabase Auth)
 - **State panier** : Zustand (persist middleware, localStorage)
 - **Paiement** : Stripe Checkout (mode hébergé, pas Stripe Elements)
@@ -30,7 +31,10 @@ sur-ingénierie pour des features qui ne seront jamais utilisées en prod réell
   mémoire par le process).
 - Deux URLs de connexion sont utilisées : `DATABASE_URL` (pooler, port 6543,
   requêtes runtime) et `DIRECT_URL` (connexion directe, port 5432,
-  migrations uniquement). Toujours les deux dans `datasource db`.
+  migrations uniquement). `prisma.config.ts` utilise `DIRECT_URL` pour
+  Prisma Migrate.
+- Appliquer les migrations avec `npx prisma migrate deploy` (le build
+  Vercel ne lance que `prisma generate`, pas les migrations).
 - Toute migration touchant au schéma `auth` de Supabase (triggers, fonctions
   sur `auth.users`) échoue avec `prisma migrate dev` à cause de la shadow
   database (le schéma `auth` n'y existe pas). Dans ce cas : donner le SQL
@@ -45,7 +49,17 @@ sur-ingénierie pour des features qui ne seront jamais utilisées en prod réell
   liées au paiement reçoivent uniquement `productId` + `quantity` ; le prix
   est toujours recalculé côté serveur via Prisma.
 - Utiliser `client_reference_id` (pas `metadata`) pour transporter l'ID
-  utilisateur dans une Stripe Checkout Session.
+  utilisateur dans une Stripe Checkout Session, et `customer_email` pour
+  préremplir l'e-mail du compte connecté.
+
+### Commande invité
+- L'authentification est facultative au checkout. Sans compte :
+  `Order.userId` est NULL et `Order.customerEmail` (e-mail saisi sur
+  Stripe) reste la source de vérité du destinataire.
+- Le rattachement d'une commande invité à un compte se fait UNIQUEMENT en
+  SQL (fonction `public.link_guest_orders()` + triggers sur `auth.users`),
+  et seulement pour un e-mail CONFIRMÉ. Ne jamais rattacher sur simple
+  inscription : quelqu'un pourrait s'inscrire avec l'adresse d'un autre.
 - La route webhook (`app/api/webhooks/stripe/route.ts`) doit lire le body
   avec `await req.text()` (jamais `req.json()`) pour préserver le body brut
   nécessaire à la vérification de signature.
@@ -62,7 +76,9 @@ sur-ingénierie pour des features qui ne seront jamais utilisées en prod réell
   Components, navigateur) et `lib/supabase/server.ts` (Server Components,
   cookies via `next/headers`). Ne jamais utiliser le client browser dans un
   Server Component ou inversement.
-- `middleware.ts` à la racine gère le rafraîchissement de session Supabase.
+- `proxy.ts` à la racine (ex-`middleware.ts`, renommé en Next 16, export
+  `proxy`) gère le rafraîchissement de session Supabase via `getClaims()`.
+  Ne jamais utiliser `getSession()` côté serveur.
 
 ### Panier
 - State géré exclusivement côté client (Zustand + localStorage), pas de
@@ -76,17 +92,20 @@ sur-ingénierie pour des features qui ne seront jamais utilisées en prod réell
   qu'il n'y a pas de vrai besoin d'upload d'images par un admin.
 
 ### Emails
-- Envoi via Resend, expéditeur par défaut `onboarding@resend.dev` (pas de
-  domaine personnalisé configuré — acceptable pour un projet de démo, les
-  emails peuvent atterrir en spam, c'est un comportement attendu).
+- E-mail de confirmation de commande envoyé via Resend depuis le webhook,
+  APRÈS le commit de la transaction : un échec d'envoi est loggé mais ne
+  fait pas échouer la commande.
+- Expéditeur : `RESEND_FROM_EMAIL` (domaine vérifié
+  `demo-eshop.vincent-angoulvant.fr`), réponse via `RESEND_REPLY_TO`
+  optionnel. En dev, `RESEND_DEV_FALLBACK_TO` redirige les envois.
+- Les e-mails d'auth (inscription, mot de passe) sont gérés par Supabase
+  Auth, pas par le code.
 
 ## Ce qui est hors scope pour l'instant
 
 Ne pas proposer spontanément, sauf demande explicite :
 - Panel admin avec gestion de rôles (chantier à part, sera fait séparément)
-- Guest checkout (achat sans compte) — l'auth est obligatoire avant paiement
 - Suivi d'expédition/livraison réel avec emails de statut
-- Domaine email personnalisé / configuration DNS
 - React Email ou tout système de templates email avancé (un seul email
   actuellement, HTML simple suffisant)
 

@@ -266,7 +266,10 @@ function parseMetadataItems(
 }
 
 function parseShippingDetails(
-    shippingDetails: any,
+    shippingDetails:
+        | { name?: string | null; address?: Stripe.Address | null }
+        | null
+        | undefined,
 ): ShippingDetails | null {
     if (!shippingDetails) return null;
 

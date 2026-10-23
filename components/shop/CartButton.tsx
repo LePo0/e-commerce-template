@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
+import { useHasMounted } from "@/lib/hooks/useHasMounted";
 import { useCartStore } from "@/lib/store/cart";
 
 import { CartDrawer } from "./CartDrawer";
@@ -14,15 +15,12 @@ import { CartDrawer } from "./CartDrawer";
  */
 export function CartButton() {
     const [open, setOpen] = useState(false);
-    const [mounted, setMounted] = useState(false);
     const totalItems = useCartStore((state) => state.getTotalItems());
 
     // Le store Zustand est hydraté depuis localStorage côté client
     // uniquement : sans ce garde, le SSR rendrait 0 et provoquerait un
     // mismatch d'hydratation avec la valeur réelle du navigateur.
-    useEffect(() => {
-        setMounted(true);
-    }, []);
+    const mounted = useHasMounted();
 
     return (
         <>
