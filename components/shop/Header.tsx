@@ -28,8 +28,6 @@ export async function Header() {
     // et est spoofable via les cookies.
     const { data: claimsData } = await supabase.auth.getClaims();
 
-    // `claims.email` est présent pour les utilisateurs Email/Password.
-    const email = claimsData?.claims?.email ?? null;
     const isAuthenticated = Boolean(claimsData?.claims);
 
     return (

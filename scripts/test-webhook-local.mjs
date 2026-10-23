@@ -28,6 +28,16 @@ function loadEnvFile(filePath) {
     return env;
 }
 
+/**
+ * Simule un événement `checkout.session.completed` signé et l'envoie au
+ * webhook du serveur local (`npm run dev` doit tourner).
+ *
+ * Usage :
+ *   npm run test:webhook              # commande d'un utilisateur existant
+ *   npm run test:webhook -- --guest   # commande invité (sans compte)
+ */
+const isGuest = process.argv.includes("--guest");
+
 const env = loadEnvFile(new URL("../.env.local", import.meta.url));
 const requiredKeys = ["STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET", "DATABASE_URL"];
 for (const key of requiredKeys) {
@@ -86,19 +96,29 @@ try {
             object: {
                 id: sessionId,
                 object: "checkout.session",
-                client_reference_id: user.id,
+                client_reference_id: isGuest ? null : user.id,
+                customer_details: {
+                    // Adresse de test Resend : simule une livraison
+                    // réussie sans bounce (préserve la réputation du domaine).
+                    email: isGuest ? "delivered@resend.dev" : user.email,
+                },
                 metadata: {
                     items: JSON.stringify(items),
                 },
                 amount_total: amountTotal,
-                shipping_details: {
-                    name: "Vincent Test",
-                    address: {
-                        line1: "10 rue de la Paix",
-                        line2: "Appartement 5B",
-                        city: "Paris",
-                        postal_code: "75002",
-                        country: "FR",
+                // Format API récent : sans `collected_information`, le
+                // webhook re-fetcherait la session chez Stripe (id fictif
+                // → introuvable).
+                collected_information: {
+                    shipping_details: {
+                        name: "Client Test",
+                        address: {
+                            line1: "10 rue de la Paix",
+                            line2: "Appartement 5B",
+                            city: "Paris",
+                            postal_code: "75002",
+                            country: "FR",
+                        },
                     },
                 },
             },
@@ -122,7 +142,7 @@ try {
 
     const responseBody = await response.text();
     const orderRes = await client.query(
-        'select id, "stripeSessionId", "shippingName", "shippingAddressLine1", "shippingAddressLine2", "shippingCity", "shippingPostalCode", "shippingCountry", "totalAmount" from orders where "stripeSessionId"=$1 limit 1',
+        'select id, "userId", "customerEmail", "stripeSessionId", "shippingName", "shippingAddressLine1", "shippingAddressLine2", "shippingCity", "shippingPostalCode", "shippingCountry", "totalAmount" from orders where "stripeSessionId"=$1 limit 1',
         [sessionId],
     );
 

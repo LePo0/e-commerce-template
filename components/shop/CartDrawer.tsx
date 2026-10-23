@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 
+import { useHasMounted } from "@/lib/hooks/useHasMounted";
 import { useCartStore } from "@/lib/store/cart";
 
 interface CartDrawerProps {
@@ -25,15 +26,12 @@ export function CartDrawer({ open, onClose }: CartDrawerProps) {
 
     const [isCheckingOut, setIsCheckingOut] = useState(false);
     const [checkoutError, setCheckoutError] = useState<string | null>(null);
-    const [isMounted, setIsMounted] = useState(false);
     const portalTarget =
         typeof document === "undefined" ? null : document.body;
 
     // Important for hydration: the server cannot access `document.body`, so we
     // delay portal rendering until after the first client mount.
-    useEffect(() => {
-        setIsMounted(true);
-    }, []);
+    const isMounted = useHasMounted();
 
     const handleClose = useCallback(() => {
         setCheckoutError(null);
